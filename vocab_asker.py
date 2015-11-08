@@ -1,0 +1,3 @@
+import vocab
+
+vocab.ask()
