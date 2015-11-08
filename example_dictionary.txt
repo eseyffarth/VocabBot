@@ -1,0 +1,4 @@
+grenouille = frog
+vache = cow
+chien = dog
+chat = cat
