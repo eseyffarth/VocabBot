@@ -25,11 +25,12 @@ def react_to_mention(api, mention):
     KNOWN_ENTRY_ANSWER = "I already knew that!"
 
     BOT_TWITTER_HANDLE = "frenchvocabbot"
-    CURRENT_CORRECT_ANSWER_FILENAME = "currentanswer.txt"
+    CURRENT_CORRECT_ANSWER_FILENAME = "correct_answers.txt"
     DICTIONARY_FILENAME = "frenchvocabdata.txt"
 
     id = mention.id
     name = mention.user.screen_name
+    in_reply_to = mention.in_reply_to_status_id
     new_entry = re.match("^\@"+BOT_TWITTER_HANDLE+"\s+\+\s+(.*)$", mention.text, re.IGNORECASE)
     if new_entry:
         with open(DICTIONARY_FILENAME, "r+", encoding="utf8") as data:
@@ -42,8 +43,15 @@ def react_to_mention(api, mention):
     else:
         user_answer = re.match("^\@"+BOT_TWITTER_HANDLE+"\s+(a|b|c)\)?$", mention.text, re.IGNORECASE)
         if user_answer:
-            with open(CURRENT_CORRECT_ANSWER_FILENAME, "r", encoding="utf8") as correct_answer:
-                correct_answer = correct_answer.read().strip()
+            with open(CURRENT_CORRECT_ANSWER_FILENAME, "r", encoding="utf8") as correct_answers:
+                answer_dict = {}
+                for line in correct_answers:
+                    if len(line) > 0:
+                        line = line.split(":")
+                        answer_dict[int(line[0].strip())] = line[1].strip()
+
+                correct_answer = answer_dict[in_reply_to]
+                print(correct_answer)
                 if user_answer.group(1).lower() == correct_answer.lower():
                     out = "@{} {}".format(name, POSITIVE_ANSWER)
                 else:
@@ -118,4 +126,22 @@ def ask():
         with open(CURRENT_CORRECT_ANSWER_FILENAME, "w", encoding="utf8") as answer:
             correct_index = ["a", "b", "c"][choices.index(correct_answer)]
             print(correct_index, file=answer)
+    return correct_index
+
+def ask_and_save():
+    api = login()
+    with open("correct_answers.txt", "r+", encoding="utf8") as questions:
+        answer_dict = {}
+        for line in questions:
+            if len(line) > 0:
+                line = line.split(":")
+                answer_dict[int(line[0].strip())] = line[1].strip()
+
+        new_answer = vocab.ask()
+        for tweet in api.me().timeline():
+            if tweet.in_reply_to_status_id is None:
+                if tweet.id in answer_dict.keys():
+                    break
+                if len(list(answer_dict.keys())) == 0 or tweet.id > max(answer_dict.keys()):
+                    print(str(tweet.id) + " : " + new_answer, file = questions)
     return

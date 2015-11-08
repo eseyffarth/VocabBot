@@ -1,3 +1,3 @@
 import vocab
 
-vocab.ask()
+vocab.ask_and_save()
